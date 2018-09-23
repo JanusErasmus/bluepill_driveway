@@ -1715,6 +1715,8 @@ static void RTC_DateUpdate(RTC_HandleTypeDef* hrtc, uint32_t DayElapsed)
 
   uint32_t dateReg = (year << 8) | month;
 
+  RCC->APB1ENR |= (RCC_APB1ENR_BKPEN | RCC_APB1ENR_PWREN);
+  //PWR->CR |= PWR_CR_DBP;
   HAL_RTCEx_BKUPWrite(hrtc,RTC_BKP_DR2, dateReg);
   HAL_RTCEx_BKUPWrite(hrtc,RTC_BKP_DR3, day);
 }
