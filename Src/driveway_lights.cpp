@@ -9,6 +9,8 @@
 
 #include "stm32f1xx_hal.h"
 
+#define REPEAT_STATE 3
+
 typedef struct
 {
 	GPIO_TypeDef *port;
@@ -33,8 +35,8 @@ DrivewayLights::DrivewayLights()
 {
 	mState = OFF;
 	mFlashFlag = 0;
+	mRepeat = 0;
 	mTick = 0;
-	mFillFlag = false;
 }
 
 DrivewayLights::~DrivewayLights()
@@ -69,9 +71,11 @@ void DrivewayLights::run()
 	switch(mState)
 	{
 	case OFF:
+		mFlashFlag = 0;
 		resetAll();
 		break;
 	case ON:
+		mFlashFlag = 0;
 		setAll();
 		break;
 	case FLASH_ON_OFF:
@@ -87,52 +91,69 @@ void DrivewayLights::run()
 		}
 		break;
 	case HOUSE_TO_STREET_OPENING:
-		setPin(mFlashFlag, GPIO_PIN_RESET);
-		mFlashFlag = (mFlashFlag + 1) % 5;
+		if(mRepeat < REPEAT_STATE)
+			setPin(mFlashFlag, GPIO_PIN_RESET);
+		mFlashFlag++;
+		if(mFlashFlag > 4)
+		{
+			mFlashFlag = 0;
+			if(mRepeat++ > REPEAT_STATE)
+			{
+				mRepeat = 0;
+				mState = ON;
+				break;
+			}
+		}
 		setPin(mFlashFlag, GPIO_PIN_SET);
 		break;
-	case HOUSE_TO_STREET_OPEN:
+	case HOUSE_TO_STREET_CLOSING:
 		setPin(mFlashFlag, GPIO_PIN_SET);
 		mFlashFlag++;
 		if(mFlashFlag > 4)
 		{
 			mFlashFlag = 0;
-			if(mFillFlag)
-				mState = ON;
 
-			mFillFlag = true;
+			if(mRepeat++ > REPEAT_STATE)
+			{
+				mRepeat = 0;
+				mState = SWITCH_OFF;
+				break;
+			}
 		}
-		break;
-	case HOUSE_TO_STREET_CLOSING:
-		setPin(mFlashFlag, GPIO_PIN_SET);
-		mFlashFlag = (mFlashFlag + 1) % 5;
-		setPin(mFlashFlag, GPIO_PIN_RESET);
+		if(mRepeat < REPEAT_STATE)
+			setPin(mFlashFlag, GPIO_PIN_RESET);
 		break;
 	case STREET_TO_HOUSE_OPENING:
-		setPin(mFlashFlag, GPIO_PIN_RESET);
-		mFlashFlag--;
-		if(mFlashFlag < 0)
-			mFlashFlag = 4;
-		setPin(mFlashFlag, GPIO_PIN_SET);
-		break;
-	case STREET_TO_HOUSE_OPEN:
-		setPin(mFlashFlag, GPIO_PIN_SET);
+		if(mRepeat < REPEAT_STATE)
+			setPin(mFlashFlag, GPIO_PIN_RESET);
 		mFlashFlag--;
 		if(mFlashFlag < 0)
 		{
 			mFlashFlag = 4;
-			if(mFillFlag)
+			if(mRepeat++ > REPEAT_STATE)
+			{
+				mRepeat = 0;
 				mState = ON;
-
-			mFillFlag = true;
+				break;
+			}
 		}
+		setPin(mFlashFlag, GPIO_PIN_SET);
 		break;
 	case STREET_TO_HOUSE_CLOSING:
 		setPin(mFlashFlag, GPIO_PIN_SET);
 		mFlashFlag--;
 		if(mFlashFlag < 0)
+		{
 			mFlashFlag = 4;
-		setPin(mFlashFlag, GPIO_PIN_RESET);
+			if(mRepeat++ > REPEAT_STATE)
+			{
+				mRepeat = 0;
+				mState = SWITCH_OFF;
+				break;
+			}
+		}
+		if(mRepeat < REPEAT_STATE)
+			setPin(mFlashFlag, GPIO_PIN_RESET);
 		break;
 	case SWITCH_OFF:
 		if(mFlashFlag == 0) //switch all lights on
@@ -171,23 +192,17 @@ void DrivewayLights::set(eLightState state)
 		return;
 	}
 
-	//while waiting for switch off delay, simply set closing states if gates are opened
+	//when light where busy switching off
 	if(mState == SWITCH_OFF)
-	{
-		if(state == STREET_TO_HOUSE_OPENING)
-			state = STREET_TO_HOUSE_CLOSING;
-
-		if(state == HOUSE_TO_STREET_OPENING)
-			state = HOUSE_TO_STREET_CLOSING;
-	}
-
-	//when switching on, do not change index
-	if(state != STREET_TO_HOUSE_OPEN)
-	{
 		mFlashFlag = 0;
-	}
 
+	//do not start flashing lights when they are on
+	if(mState == ON)
+	{
+		if((state == HOUSE_TO_STREET_OPENING) || (state == STREET_TO_HOUSE_OPENING) ||
+				(state == HOUSE_TO_STREET_CLOSING) || (state == STREET_TO_HOUSE_CLOSING))
+			return;
+	}
 
 	mState = state;
-	mFillFlag = false;
 }

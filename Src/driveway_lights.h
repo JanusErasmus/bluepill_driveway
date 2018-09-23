@@ -16,17 +16,15 @@ public:
 		OFF,
 		FLASH_ON_OFF,
 		HOUSE_TO_STREET_OPENING,
-		HOUSE_TO_STREET_OPEN,
 		HOUSE_TO_STREET_CLOSING,
 		STREET_TO_HOUSE_OPENING,
-		STREET_TO_HOUSE_OPEN,
 		STREET_TO_HOUSE_CLOSING,
 		SWITCH_OFF
 	};
 private:
 	eLightState mState;
 	int mFlashFlag;
-	bool mFillFlag;
+	int mRepeat;
 	int mTick;
 public:
 	DrivewayLights();

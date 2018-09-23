@@ -12,7 +12,7 @@ DrivewayMotors::DrivewayMotors(DrivewayLights *lights,
 								CenturionGate *house_gate) :
 								mStreetGate(street_gate),
 								mHouseGate(house_gate),
-								mFSM(lights)
+								mLights(lights)
 {
 	mStreetGate->setStateListener(this);
 	mHouseGate->setStateListener(this);
@@ -43,14 +43,22 @@ void DrivewayMotors::stateChanged(CenturionGate* gate, eMotorState state)
 	if(gate == mStreetGate)
 	{
 		printf("StreetGate: %s\n", stateToString(state));
+
+		if((state == OPENING) || (state == OPEN))
+			mLights->set(DrivewayLights::STREET_TO_HOUSE_OPENING);
+		if((state == CLOSING) || (state == CLOSED))
+			mLights->set(DrivewayLights::STREET_TO_HOUSE_CLOSING);
 	}
 
 	if(gate == mHouseGate)
 	{
 		printf("HouseGate: %s\n", stateToString(state));
-	}
 
-	mFSM.updateState(mStreetGate->getState(), mHouseGate->getState());
+		if((state == OPENING) || (state == OPEN))
+			mLights->set(DrivewayLights::HOUSE_TO_STREET_OPENING);
+		if((state == CLOSING) || (state == CLOSED))
+			mLights->set(DrivewayLights::HOUSE_TO_STREET_CLOSING);
+	}
 
 	//do not report moving states
 	//if(!((state == CLOSING) || (state == OPENING)))

@@ -9,14 +9,12 @@
 #define SRC_DRIVEWAY_MOTORS_H_
 #include "centurion_gate.h"
 #include "driveway_lights.h"
-#include "driveway_fsm.h"
 
 class DrivewayMotors : public MotorStateChangeListener
 {
 	CenturionGate *mStreetGate;
 	CenturionGate *mHouseGate;
-
-	DrivewayFSM mFSM;
+	DrivewayLights *mLights;
 
 public:
 	DrivewayMotors(DrivewayLights *lights,

@@ -18,7 +18,7 @@ typedef struct {
 	sSunrise_time sunset;
 }sSunriseTimes;
 
-static const sSunriseTimes Sun[] = {
+static const sSunriseTimes SunTimes[] = {
 		{1,  1, {5, 20}, {19, 00}},
 		{1, 15, {5, 30}, {19, 00}},
 		{2,  1, {5, 40}, {18, 50}},
@@ -45,9 +45,54 @@ static const sSunriseTimes Sun[] = {
 		{12, 15, {5, 00}, {19, 00}},
 		{0, 0, {0, 00}, {0, 00}},
 };
+
+static int check_time(int hour, int minute, sSunrise_time sunrise, sSunrise_time sunset)
+{
+	if(sunrise.hour == hour)
+	{
+		if(minute > sunrise.minute)
+			return 1;
+	}
+
+	if(sunset.hour == hour)
+	{
+		if(minute < sunset.minute)
+			return 1;
+	}
+
+	if((sunrise.hour < hour) && (hour < sunset.hour))
+		return 1;
+
+	return 0;
+}
+
 int sunrise_is_day(int month, int day, int hour, int minute)
 {
 	printf("Sunrise: Check %d-%d %02d:%02d\n", month, day, hour, minute);
+
+	sSunriseTimes time;
+	int k = 0;
+	time = SunTimes[k++];
+	while(time.month)
+	{
+		//use the same month
+		if(time.month == month)
+		{
+			//see if we are in the first day range
+			if(day < 15)
+			{
+				return check_time(hour, minute, time.sunrise, time.sunset);
+			}
+			else
+			{
+				time = SunTimes[k];
+				return check_time(hour, minute, time.sunrise, time.sunset);
+			}
+
+		}
+		time = SunTimes[k++];
+	}
+
 
 	return 0;
 }

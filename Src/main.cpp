@@ -59,6 +59,7 @@
 #include "Utils/utils.h"
 #include "usb_device.h"
 
+#include "sunrise.h"
 #include "interface_nrf24.h"
 #include "centurion_gate.h"
 #include "driveway_lights.h"
@@ -172,6 +173,7 @@ uint32_t getTemperature()
 
 void report(uint8_t *address)
 {
+//	printf("NOT reporting\n");
 	nodeData_s pay;
 	memset(&pay, 0, 16);
 	pay.timestamp = HAL_GetTick();
@@ -191,14 +193,14 @@ void reportNow()
 bool isDay()
 {
 	RTC_TimeTypeDef sTime;
+	RTC_DateTypeDef sDate;
 	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-	printf("H: %d\n", sTime.Hours);
+	if(sunrise_is_day(sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes) == 1)
+		return true;
 
-	if((sTime.Hours > 17) || (5 > sTime.Hours))
-		return false;
-
-	return true;
+	return false;
 }
 
 bool NRFreceivedCB(int pipe, uint8_t *data, int len)
@@ -281,9 +283,9 @@ int main(void)
   printf("Bluepill @ %dHz\n", (int)HAL_RCC_GetSysClockFreq());
   MX_RTC_Init();
 
-  //lights.set(DrivewayLights::STREET_TO_HOUSE_OPENING);
 
 //  report(netAddress);
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /* Infinite loop */
   while (1)
@@ -294,7 +296,7 @@ int main(void)
 	  InterfaceNRF24::get()->run();
 
       HAL_Delay(100);
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+//      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
   }
 
@@ -371,6 +373,9 @@ static void MX_RTC_Init(void)
   RTC_TimeTypeDef sTime;
   RTC_DateTypeDef sDate;
 
+//  RCC->APB1ENR |= (RCC_APB1ENR_BKPEN | RCC_APB1ENR_PWREN);
+
+
     /**Initialize RTC Only 
     */
   hrtc.Instance = RTC;
@@ -380,6 +385,11 @@ static void MX_RTC_Init(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
+//  RTC_TamperTypeDef tamper;
+//  tamper.Tamper = RTC_TAMPER_1;
+//  tamper.Trigger = RTC_TAMPERTRIGGER_HIGHLEVEL;
+//  HAL_RTCEx_SetTamper(&hrtc, &tamper);
+  HAL_RTCEx_DeactivateTamper(&hrtc, RTC_TAMPER_1);
 
     /**Initialize RTC and set the Time and Date 
     */
@@ -417,7 +427,6 @@ static void MX_RTC_Init(void)
 
 	  HAL_RTCEx_BKUPWrite(&hrtc,RTC_BKP_DR1,0x32F2);
   }
-
 }
 
 /** Configure pins as 
@@ -682,6 +691,8 @@ void rtc_debug(uint8_t argc, char **argv)
 		sTime.Minutes = atoi(argv[5]);
 		sTime.Seconds = 0;
 
+		RCC->APB1ENR |= (RCC_APB1ENR_BKPEN | RCC_APB1ENR_PWREN);
+		//PWR->CR |= PWR_CR_DBP;
 		HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 		HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 	}
