@@ -87,6 +87,8 @@ static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 }
 
+DrivewayLights lights;
+
 /* Private function prototypes -----------------------------------------------*/
 typedef struct {
 	uint32_t timestamp;		//4
@@ -213,7 +215,7 @@ bool NRFreceivedCB(int pipe, uint8_t *data, int len)
 	memcpy(&down, data, len);
 	int hour = (down.timestamp >> 8) & 0xFF;
 	int min = (down.timestamp) & 0xFF;
-	printf("Time %d:%d\n", hour, min);
+	printf("Set time %d:%d\n", hour, min);
 
 	RTC_TimeTypeDef sTime;
 	sTime.Hours = hour;
@@ -225,6 +227,18 @@ bool NRFreceivedCB(int pipe, uint8_t *data, int len)
 	if(pipe == 1)
 	{
 		report(netAddress);
+	}
+
+	//command to node
+	if(pipe == 0)
+	{
+		printf("Set lights %d\n", down.outputs);
+
+		if(down.outputs & 0x01)
+		{
+			printf("Setting lights\n");
+			lights.switchOn();
+		}
 	}
 
 	return false;
@@ -242,7 +256,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
 
-  DrivewayLights lights;
   DrivewayMotors motors(&lights, &streetGate, &houseGate);
 
   HAL_Delay(1000);

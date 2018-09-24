@@ -177,6 +177,24 @@ void DrivewayLights::run()
 		}
 		mFlashFlag++;
 		break;
+	case ON_PULSE:
+		if(mFlashFlag == 0) //switch outer lights on to middle
+		{
+			setPin(0, GPIO_PIN_SET);
+			setPin(4, GPIO_PIN_SET);
+		}
+		if(mFlashFlag == 1) //switch outer lights off to middle
+		{
+			setPin(1, GPIO_PIN_SET);
+			setPin(3, GPIO_PIN_SET);
+		}
+		if(mFlashFlag == 2) //switch outer lights off to middle
+		{
+			setPin(2, GPIO_PIN_SET);
+			mState = SWITCH_OFF;
+		}
+		mFlashFlag++;
+		break;
 	}
 }
 
@@ -199,10 +217,15 @@ void DrivewayLights::set(eLightState state)
 	//do not start flashing lights when they are on
 	if(mState == ON)
 	{
-		if((state == HOUSE_TO_STREET_OPENING) || (state == STREET_TO_HOUSE_OPENING) ||
-				(state == HOUSE_TO_STREET_CLOSING) || (state == STREET_TO_HOUSE_CLOSING))
+		if((state == HOUSE_TO_STREET_OPENING) || (state == STREET_TO_HOUSE_OPENING))
 			return;
 	}
 
 	mState = state;
+}
+
+void DrivewayLights::switchOn()
+{
+	mState = ON_PULSE;
+	mFlashFlag = 0;
 }

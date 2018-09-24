@@ -19,7 +19,8 @@ public:
 		HOUSE_TO_STREET_CLOSING,
 		STREET_TO_HOUSE_OPENING,
 		STREET_TO_HOUSE_CLOSING,
-		SWITCH_OFF
+		SWITCH_OFF,
+		ON_PULSE
 	};
 private:
 	eLightState mState;
@@ -32,6 +33,8 @@ public:
 
 	void run();
 	void set(eLightState state);
+
+	void switchOn();
 };
 
 #endif /* SRC_DRIVEWAY_LIGHTS_H_ */
